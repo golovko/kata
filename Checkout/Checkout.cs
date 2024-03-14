@@ -5,48 +5,47 @@ namespace Checkout;
 public class Checkout : ICheckout
 {
     private Catalogue _catalogue;
-    public List<Item> scanned = new();
-    public Dictionary<string, List<Item>> specialGroups { get; set; }
-    public Hashtable hashtable { get; set; }
-
+    private List<Item> _scannedItems = new();
+    private Hashtable groupedScannedSku { get; set; }
+    
     public Checkout(Catalogue catalogue)
     {
         _catalogue = catalogue;
-        this.hashtable = new Hashtable();
+        this.groupedScannedSku = new Hashtable();
     }
 
     public int GetTotalPrice()
     {
-        if (scanned.Count <= 0) return 0;
+        if (_scannedItems.Count <= 0) return 0;
         int result = 0;
-        foreach (var item in scanned)
+        
+        foreach (Item item in _scannedItems)
         {
-            if (!hashtable.Contains(item.sku))
+            if (!groupedScannedSku.Contains(item.sku))
             {
-                hashtable.Add(item.sku, 1);
+                groupedScannedSku.Add(item.sku, 1);
             }
             else
             {
-                hashtable[item.sku] = (int)hashtable[item.sku]! + 1;
+                groupedScannedSku[item.sku] = (int)groupedScannedSku[item.sku]! + 1;
             }
         }
 
-        foreach (DictionaryEntry item in hashtable)
+        foreach (DictionaryEntry item in groupedScannedSku)
         {
-            System.Console.WriteLine(item);
-            var catalogItem = _catalogue.Items.FirstOrDefault(element => element.sku == (string)item.Key);
-            var regularPrice = catalogItem.price;
-            var scannedAmount = (int)item.Value!;
+            Item catalogItem = _catalogue.Items.FirstOrDefault(element => element.sku == (string)item.Key)!;
+            int regularPrice = catalogItem!.price;
+            int scannedAmount = (int)item.Value!;
 
             if (catalogItem.specialPrice != null && scannedAmount >= catalogItem.specialPrice.amount)
             {
-                var specialPriceAmount = catalogItem.specialPrice.amount;
-                var specialPrice = catalogItem.specialPrice.specialPrice;
-                var specialPriceTotal = (int)(Math.Floor((decimal)scannedAmount / (decimal)specialPriceAmount) * (decimal)specialPrice);
+                int specialPriceAmount = catalogItem.specialPrice.amount;
+                int specialPrice = catalogItem.specialPrice.specialPrice;
+                int specialPriceTotal = (int)(Math.Floor((decimal)scannedAmount / (decimal)specialPriceAmount) * (decimal)specialPrice);
                 result += specialPriceTotal;
                 if (scannedAmount % specialPriceAmount != 0)
                 {
-                    var leftover = scannedAmount % specialPriceAmount * regularPrice;
+                    int leftover = scannedAmount % specialPriceAmount * regularPrice;
                     result += leftover;
                 }
             }
@@ -59,13 +58,15 @@ public class Checkout : ICheckout
         return result;
     }
 
-    public void Scan(string item)
+    public void Scan(string sku)
     {
-        if (_catalogue.Items.Length == 0) throw new Exception("Set catalogue first");
-        var result = _catalogue.Items.FirstOrDefault(element => element.sku == item);
-        if (result != null)
+        if (_catalogue.Items.Length == 0) {
+            throw new Exception("Set catalogue first");
+            }
+        Item? item = _catalogue.Items.FirstOrDefault(element => element.sku == sku);
+        if (item != null)
         {
-            scanned.Add(result);
+            _scannedItems.Add(item);
         }
         else
         {

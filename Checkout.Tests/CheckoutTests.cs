@@ -1,4 +1,3 @@
-using Checkout;
 namespace Checkout.Tests;
 
 public class Tests
